@@ -1,9 +1,9 @@
-FROM edgyr/internal-ubuntu-builder:latest AS builder
+FROM tazovsky/internal-ubuntu-builder:R-4.1.2 AS builder
 
 FROM ubuntu:bionic
 
 COPY --from=builder /usr/local/lib/rstudio-server /usr/local/lib/rstudio-server
-COPY --from=builder /usr/local/bin/pandoc /usr/local/bin/pandoc
+COPY --from=builder /opt/pandoc-*/bin/pandoc /usr/local/bin/pandoc
 COPY --from=builder /usr/local/lib/R /usr/local/lib/R
 COPY --from=builder /usr/local/bin/R* /usr/local/bin/
 COPY --from=builder /usr/local/lib/libRmath.so /usr/local/lib/libRmath.so
@@ -149,14 +149,15 @@ RUN git config --system credential.helper 'cache --timeout=3600' \
      && ln -f -s /usr/local/lib/rstudio-server/bin/rstudio-server /usr/sbin/rstudio-server \
      && useradd -r rstudio-server
 
-COPY --from=builder /usr/local/src/packages packages
-RUN apt-get install -qqy --no-install-recommends libc-ares2 \
-  && dpkg -i ./packages/libnghttp2-14_1.36.0-bionic0_arm64.deb \
-  && dpkg -i ./packages/libuv1_1.24.1-bionic0_arm64.deb \
-  && dpkg -i ./packages/libnode64_10.15.2~dfsg-bionic0_arm64.deb \
-  && dpkg -i ./packages/libuv1-dev_1.24.1-bionic0_arm64.deb \
-  && dpkg -i ./packages/libnode-dev_10.15.2~dfsg-bionic0_arm64.deb \
-  && rm -rf ./packages
+RUN R -e 'Sys.setenv(DOWNLOAD_STATIC_LIBV8 = 1); install.packages("V8")'
+# COPY --from=builder /usr/local/src/packages packages
+# RUN apt-get install -qqy --no-install-recommends libc-ares2 \
+#   && dpkg -i ./packages/libnghttp2-14_1.36.0-bionic0_arm64.deb \
+#   && dpkg -i ./packages/libuv1_1.24.1-bionic0_arm64.deb \
+#   && dpkg -i ./packages/libnode64_10.15.2~dfsg-bionic0_arm64.deb \
+#   && dpkg -i ./packages/libuv1-dev_1.24.1-bionic0_arm64.deb \
+#   && dpkg -i ./packages/libnode-dev_10.15.2~dfsg-bionic0_arm64.deb \
+#   && rm -rf ./packages
 
 RUN echo 'rstudio ALL=(ALL:ALL) ALL' >> /etc/sudoers
 
